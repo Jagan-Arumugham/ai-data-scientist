@@ -162,3 +162,8 @@ Adding a new analysis is three steps: create a folder under `analyses/`, drop in
 ## Iterating and Improving
 
 When a node produces output that falls short of your standard, add the missing reasoning back into the relevant skill file in `skills/`. Every improvement benefits all future analyses automatically — past analyses are unaffected.
+
+
+## Demo Datasets Used in Development
+- Telco Customer Churn — kaggle.com/datasets/blastchar/telco-customer-churn
+- Credit Card Customer Segmentation — kaggle.com/datasets/arjunbhasin2013/ccdata
