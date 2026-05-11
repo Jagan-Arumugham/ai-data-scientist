@@ -1,0 +1,183 @@
+{
+  "session": {
+    "started": "2026-05-09 00:00",
+    "last_updated": "2026-05-09 00:03",
+    "analysis_id": "credit_card_segmentation",
+    "status": "complete"
+  },
+  "intake": {
+    "business_question": "What distinct behavioral segments exist among active credit card customers, and what does each segment's usage pattern reveal about financial behavior, engagement, and product relationship?",
+    "dataset": "data/cc_general.csv",
+    "data_dictionary": "data/data_dictionary.md",
+    "population": "Active credit card holders with account activity in the last 6 months",
+    "time_period": "6-month behavioral snapshot",
+    "hypotheses": [
+      "High-balance, low-purchase revolvers exist — carry balances but rarely transact",
+      "High-frequency transactors exist — use card regularly and pay in full",
+      "Cash advance segment exists — primary usage is cash withdrawal, not purchases",
+      "Dormant or minimal-usage segment exists — low balance, low frequency, low payments",
+      "Installment purchasers form a distinct segment from one-off purchasers"
+    ],
+    "nodes_to_run": ["eda", "segmentation", "profiling", "insight_synthesis"],
+    "nodes_to_skip": ["driver_analysis"]
+  },
+  "decisions": [
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded PURCHASES — collinear with ONEOFF_PURCHASES + INSTALLMENTS_PURCHASES (r=0.917).", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded PURCHASES_FREQUENCY — redundant with sub-components (r=0.863).", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded CASH_ADVANCE_TRX — redundant with CASH_ADVANCE_FREQUENCY (r=0.800).", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded TENURE — low variance (std=1.34, range 6-12).", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded BALANCE_FREQUENCY — 69.4% at max, low discriminating power.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "column_exclusion", "detail": "Excluded CUST_ID — identifier.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "null_treatment", "detail": "MINIMUM_PAYMENTS: imputed 313 nulls with median 312.34.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "null_treatment", "detail": "CREDIT_LIMIT: imputed 1 null with median 3000.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "derived_feature", "detail": "Derived BALANCE_TO_LIMIT_RATIO = BALANCE / CREDIT_LIMIT.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:00", "node": "eda", "decision_type": "outlier_treatment", "detail": "Dollar variable outliers retained as plausible extreme values.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:01", "node": "segmentation", "decision_type": "approach", "detail": "K-Means clustering — no target variable.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:01", "node": "segmentation", "decision_type": "k_selection", "detail": "Iteration 1: k=3 rejected — 48.8% catch-all cluster.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:01", "node": "segmentation", "decision_type": "k_selection", "detail": "Iteration 2: k=5 rejected — no clean transactor segment.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:01", "node": "segmentation", "decision_type": "k_selection", "detail": "Iteration 3: k=7 base with C0->C1 and C5->C4 merges approved.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:01", "node": "segmentation", "decision_type": "segment_names_confirmed", "detail": "5 segment names confirmed by analyst.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:02", "node": "profiling", "decision_type": "findings_confirmed", "detail": "All profiling findings accepted. Top differentiators: BALANCE_TO_LIMIT_RATIO (η²=0.717), PRC_FULL_PAYMENT (η²=0.695), BALANCE, CASH_ADVANCE, CASH_ADVANCE_FREQUENCY — all large effect, p<0.05.", "confirmed": true},
+    {"timestamp": "2026-05-09 00:02", "node": "profiling", "decision_type": "risk_flag", "detail": "S0 (High-Utilization Revolvers) and S4 (Cash Advance Revolvers) confirmed as risk segments — to be flagged separately in final report for Credit Risk team.", "confirmed": true}
+  ],
+  "notes": [],
+  "columns_excluded": ["CUST_ID","PURCHASES","PURCHASES_FREQUENCY","CASH_ADVANCE_TRX","TENURE","BALANCE_FREQUENCY"],
+  "columns_retained": ["BALANCE","CREDIT_LIMIT","ONEOFF_PURCHASES","INSTALLMENTS_PURCHASES","CASH_ADVANCE","PAYMENTS","MINIMUM_PAYMENTS","PURCHASES_TRX","ONEOFF_PURCHASES_FREQUENCY","PURCHASES_INSTALLMENTS_FREQUENCY","CASH_ADVANCE_FREQUENCY","PRC_FULL_PAYMENT","BALANCE_TO_LIMIT_RATIO"],
+  "null_treatments": {
+    "MINIMUM_PAYMENTS": "imputed with median (312.34) — 313 rows",
+    "CREDIT_LIMIT": "imputed with median (3000) — 1 row"
+  },
+  "segment_definitions": {
+    "High-Utilization Revolvers": {"segment_id": 0, "definition": "k=7 C0+C1 merged. High utilization (0.76), low credit limit ($2,518), minimal purchases, PRC=0.01.", "size": 2763, "pct_of_population": 30.9},
+    "Low-Balance Occasional Users": {"segment_id": 1, "definition": "k=7 C2. Low balance ($442), 12% utilization, modest purchases, PRC=0.06.", "size": 2975, "pct_of_population": 33.2},
+    "Full-Payment Transactors": {"segment_id": 2, "definition": "k=7 C3. Near-zero balance ($103), PRC=0.77, installment-heavy, no cash advance.", "size": 1146, "pct_of_population": 12.8},
+    "Active Purchasers": {"segment_id": 3, "definition": "k=7 C4+C5 merged. High credit limit ($7,821), high purchases ($4,305), 58 transactions, PRC=0.20.", "size": 1129, "pct_of_population": 12.6},
+    "Cash Advance Revolvers": {"segment_id": 4, "definition": "k=7 C6. $5,165 avg cash advance, 47% frequency, $5,179 balance, PRC=0.04.", "size": 937, "pct_of_population": 10.5}
+  },
+  "nodes": {
+    "eda": {
+      "status": "complete",
+      "started": "2026-05-09 00:00",
+      "completed": "2026-05-09 00:00",
+      "findings": {
+        "row_count": 8950, "column_count": 18, "target_variable": null,
+        "null_flags": ["MINIMUM_PAYMENTS: 3.50% — median imputed","CREDIT_LIMIT: 0.01% — median imputed"],
+        "distribution_flags": ["PRC_FULL_PAYMENT: 66% zeros","CASH_ADVANCE_FREQUENCY: 51.7% zeros","PURCHASES_FREQUENCY: bimodal","BALANCE_FREQUENCY: 69.4% at max — excluded","TENURE: std=1.34 — excluded"],
+        "correlation_flags": [
+          {"pair": ["PURCHASES","ONEOFF_PURCHASES"],"correlation": 0.917,"recommendation": "excluded PURCHASES","confirmed": true},
+          {"pair": ["PURCHASES_FREQUENCY","PURCHASES_INSTALLMENTS_FREQUENCY"],"correlation": 0.863,"recommendation": "excluded PURCHASES_FREQUENCY","confirmed": true},
+          {"pair": ["CASH_ADVANCE_FREQUENCY","CASH_ADVANCE_TRX"],"correlation": 0.800,"recommendation": "excluded CASH_ADVANCE_TRX","confirmed": true}
+        ]
+      },
+      "user_decisions": {
+        "columns_excluded_reason": {"CUST_ID":"identifier","PURCHASES":"collinear r=0.917","PURCHASES_FREQUENCY":"redundant r=0.863","CASH_ADVANCE_TRX":"redundant r=0.800","TENURE":"low variance","BALANCE_FREQUENCY":"69.4% at max"},
+        "null_treatment_decisions": {"MINIMUM_PAYMENTS":"median 312.34","CREDIT_LIMIT":"median 3000"},
+        "derived_features": {"BALANCE_TO_LIMIT_RATIO":"BALANCE/CREDIT_LIMIT"},
+        "outlier_treatment": "retain"
+      },
+      "flags_raised": ["CASH_ADVANCE_FREQUENCY, ONEOFF_PURCHASES_FREQUENCY, PURCHASES_INSTALLMENTS_FREQUENCY zero-inflated >40%"],
+      "flags_resolved": ["PURCHASES collinearity","MINIMUM_PAYMENTS nulls","CREDIT_LIMIT null","TENURE low variance"]
+    },
+    "segmentation": {
+      "status": "complete",
+      "started": "2026-05-09 00:01",
+      "completed": "2026-05-09 00:01",
+      "findings": {
+        "approach": "clustering",
+        "approach_rationale": "No target variable — pure unsupervised k-means on 13 features.",
+        "variables_used": ["BALANCE","CREDIT_LIMIT","ONEOFF_PURCHASES","INSTALLMENTS_PURCHASES","CASH_ADVANCE","PAYMENTS","MINIMUM_PAYMENTS","PURCHASES_TRX","ONEOFF_PURCHASES_FREQUENCY","PURCHASES_INSTALLMENTS_FREQUENCY","CASH_ADVANCE_FREQUENCY","PRC_FULL_PAYMENT","BALANCE_TO_LIMIT_RATIO"],
+        "k_evaluated": [2,3,4,5,6,7,8],
+        "silhouette_scores": {"2":0.1886,"3":0.1975,"4":0.1834,"5":0.1942,"6":0.1837,"7":0.1874,"8":0.1778},
+        "final_k_base": 7,
+        "merges_applied": ["C0->C1","C5->C4"],
+        "final_segments": 5
+      },
+      "iterations": [
+        {"iteration":1,"description":"k=3","segment_sizes":{"catch-all":4372,"revolvers":3790,"spenders":788},"quality_flags":["48.8% catch-all"],"analyst_decision":"rejected"},
+        {"iteration":2,"description":"k=5","segment_sizes":{"installment":3402,"cash-adv":946,"one-off":1318,"revolvers":3142,"vip":142},"quality_flags":["no clean transactor segment"],"analyst_decision":"rejected"},
+        {"iteration":3,"description":"k=7 + merges","segment_sizes":{"High-Utilization Revolvers":2763,"Low-Balance Occasional Users":2975,"Full-Payment Transactors":1146,"Active Purchasers":1129,"Cash Advance Revolvers":937},"quality_flags":["pre-merge micro-clusters resolved"],"analyst_decision":"approved"}
+      ],
+      "approved_segmentation": {
+        "iteration_number": 3,
+        "segments": [
+          {"name":"High-Utilization Revolvers","size":2763,"pct_of_population":30.9},
+          {"name":"Low-Balance Occasional Users","size":2975,"pct_of_population":33.2},
+          {"name":"Full-Payment Transactors","size":1146,"pct_of_population":12.8},
+          {"name":"Active Purchasers","size":1129,"pct_of_population":12.6},
+          {"name":"Cash Advance Revolvers","size":937,"pct_of_population":10.5}
+        ]
+      },
+      "user_decisions": {"k_chosen":7,"merges":{"C0_into_C1":"extreme revolvers","C5_into_C4":"ultra-VIP"},"names_confirmed":true},
+      "flags_raised": [],
+      "flags_resolved": ["micro-clusters C0 and C5 resolved by merging"]
+    },
+    "profiling": {
+      "status": "complete",
+      "started": "2026-05-09 00:02",
+      "completed": "2026-05-09 00:02",
+      "findings": {
+        "variables_profiled": 17,
+        "segments_profiled": ["High-Utilization Revolvers","Low-Balance Occasional Users","Full-Payment Transactors","Active Purchasers","Cash Advance Revolvers"]
+      },
+      "key_differentiators": [
+        {"variable":"BALANCE_TO_LIMIT_RATIO","effect_size":0.717,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"Highest in S0 Revolvers (0.76) and S4 Cash Advance (0.61); lowest in S2 Transactors (0.04)","actionable":true},
+        {"variable":"PRC_FULL_PAYMENT","effect_size":0.695,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S2 Transactors dominant (0.77); S0 and S4 near zero (0.01, 0.04)","actionable":true},
+        {"variable":"BALANCE","effect_size":0.499,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"Highest in S4 ($5,179) and S0 ($1,823); lowest in S2 ($103)","actionable":true},
+        {"variable":"CASH_ADVANCE","effect_size":0.488,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"Overwhelmingly concentrated in S4 ($5,165 avg); near-zero in S2 ($50)","actionable":true},
+        {"variable":"CASH_ADVANCE_FREQUENCY","effect_size":0.457,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S4 at 0.47; all other segments below 0.20","actionable":true},
+        {"variable":"PURCHASES_TRX","effect_size":0.445,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S3 Active Purchasers dominant (57.7); S0 Revolvers lowest (6.3)","actionable":true},
+        {"variable":"ONEOFF_PURCHASES_FREQUENCY","effect_size":0.418,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S3 highest (0.71); S0 lowest (0.10)","actionable":true},
+        {"variable":"PURCHASES","effect_size":0.353,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S3 dominant ($4,305); S0 lowest ($345)","actionable":true},
+        {"variable":"CREDIT_LIMIT","effect_size":0.346,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S4 and S3 highest ($8,693/$7,821); S0 lowest ($2,518)","actionable":true},
+        {"variable":"PURCHASES_FREQUENCY","effect_size":0.323,"effect_size_metric":"eta_squared","statistically_significant":true,"direction":"S3 highest; S0 and S4 lowest","actionable":true}
+      ],
+      "segment_narratives": {
+        "High-Utilization Revolvers": "These customers are carrying near-maximum debt relative to their credit lines (76% utilization, $2,518 avg limit). They make very few purchases and almost never pay their balance in full (PRC=0.01). Moderate cash advance adds to their debt. Highest credit risk profile in the portfolio.",
+        "Low-Balance Occasional Users": "The portfolio's most passive segment. Low balance ($442), 12% utilization, modest purchase activity. Rarely pays in full but carries little debt. Highest risk of product abandonment if not re-engaged.",
+        "Full-Payment Transactors": "Financially disciplined. Near-zero balance ($103), pays in full 77% of cycles, installment-heavy, almost no cash advance. Generates no interest income — target for rewards and premium card programs.",
+        "Active Purchasers": "Highest-value customers. $7,821 avg credit limit, $4,305 total purchases, 58 transactions/period, $4,146 payments. Drives bulk of transaction volume and interchange revenue.",
+        "Cash Advance Revolvers": "Card used as short-term loan. $5,165 avg cash advance, 47% advance frequency, $5,179 balance, PRC=0.04. Clearest risk profile — warrants Credit Risk team attention."
+      },
+      "hypothesis_results": {
+        "H1_high_balance_low_purchase_revolvers": "SUPPORTED — S0 confirms: $1,823 balance, $345 purchases, PRC=0.01",
+        "H2_high_frequency_transactors_pay_in_full": "SUPPORTED — S2 confirms: PRC=0.77, $103 balance. Note: S3 is high-frequency but PRC=0.20 — two distinct profiles",
+        "H3_cash_advance_segment": "STRONGLY SUPPORTED — S4 clearest segment: $5,165 avg advance, 47% frequency",
+        "H4_dormant_minimal_usage": "PARTIALLY SUPPORTED — S1 closest match; no fully dormant cluster (inactive pre-filtered)",
+        "H5_installment_vs_oneoff": "SUPPORTED — S2 installment-heavy (0.63 freq), S3 one-off dominant ($2,839 vs $1,466)"
+      },
+      "user_decisions": {
+        "findings_confirmed": true,
+        "risk_segments_flagged": ["High-Utilization Revolvers","Cash Advance Revolvers"]
+      },
+      "flags_raised": [
+        "S3 Active Purchasers: PRC=0.20 with high payments — short-term balance carry pattern, not chronic revolving. Confirm with Credit Card team.",
+        "S4 Cash Advance Revolvers: higher credit limits ($8,693) than S0 ($2,518) — limit assignment policy may not account for cash advance propensity. Flag for Credit Risk review."
+      ],
+      "flags_resolved": []
+    },
+    "driver_analysis": {
+      "status": "skipped",
+      "reason": "No target variable — unsupervised analysis. Profiling serves the differentiator purpose."
+    },
+    "insight_synthesis": {
+      "status": "complete",
+      "started": "2026-05-09 00:03",
+      "completed": "2026-05-09 00:03",
+      "narrative": "outputs/findings_report.html",
+      "recommendations": [
+        {"rank": 1, "headline": "Re-engage Low-Balance Occasional Users before they abandon the product", "target_segment": "Low-Balance Occasional Users", "motivating_finding": "Largest segment (33.2%), lowest engagement, highest attrition risk", "confidence": "high"},
+        {"rank": 2, "headline": "Protect and deepen Active Purchasers with retention and upgrade offers", "target_segment": "Active Purchasers", "motivating_finding": "Disproportionate interchange revenue; losing one customer from this segment costs more than any other", "confidence": "high"},
+        {"rank": 3, "headline": "Convert Full-Payment Transactors to fee-generating premium products", "target_segment": "Full-Payment Transactors", "motivating_finding": "High engagement, near-zero interest income — fee revenue is the only viable monetization lever", "confidence": "high"},
+        {"rank": 4, "headline": "Refer Cash Advance Revolvers to Credit Risk for limit and policy review", "target_segment": "Cash Advance Revolvers", "motivating_finding": "High credit limits co-existing with extreme cash advance behavior and near-zero repayment", "confidence": "moderate"},
+        {"rank": 5, "headline": "Monitor High-Utilization Revolvers for early delinquency signals", "target_segment": "High-Utilization Revolvers", "motivating_finding": "Near-maxed on low limits, almost no repayment — one income shock from delinquency", "confidence": "moderate"}
+      ],
+      "open_questions": [
+        {"question": "Do Cash Advance Revolvers have higher income justifying their credit limits?", "data_needed": "Income, credit bureau data, origination score, and limit assignment history"},
+        {"question": "Are Active Purchasers carrying short-term balance or beginning to revolve?", "data_needed": "Longitudinal balance and payment data across multiple 6-month periods"},
+        {"question": "Is Low-Balance Occasional Users a stable segment or customers in decline?", "data_needed": "Prior period behavioral data to classify trajectory — stable vs. declining engagement"},
+        {"question": "Flat silhouette curve (0.177–0.198) — soft cluster boundaries at S0/S4 and S1/S2", "data_needed": "Boundary customers should be reviewed during campaign targeting to avoid misclassification"}
+      ],
+      "user_decisions": {"findings_accepted": true, "risk_segments_flagged_in_report": true}
+    }
+  }
+}

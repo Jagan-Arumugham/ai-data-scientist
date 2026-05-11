@@ -1,0 +1,274 @@
+{
+  "session": {
+    "started": "2026-05-10 00:00",
+    "last_updated": "2026-05-10 00:04",
+    "analysis_id": "telco_customer_churn",
+    "status": "complete"
+  },
+  "intake": {
+    "business_question": "Identify the drivers of customer churn",
+    "dataset": "data/WA_Fn-UseC_-Telco-Customer-Churn.csv",
+    "data_dictionary": "data/data_dictionary.md",
+    "population": "",
+    "time_period": "",
+    "hypotheses": [],
+    "nodes_to_run": ["eda", "profiling", "driver_analysis", "insight_synthesis"],
+    "nodes_to_skip": ["segmentation"]
+  },
+  "decisions": [
+    {
+      "timestamp": "2026-05-10 00:01",
+      "node": "eda",
+      "decision_type": "column_exclusion",
+      "detail": "Excluded customerID — operational identifier with no analytical value"
+    },
+    {
+      "timestamp": "2026-05-10 00:01",
+      "node": "eda",
+      "decision_type": "column_exclusion",
+      "detail": "Excluded TotalCharges — collinear with tenure (r=0.826); MonthlyCharges retained to capture spend independently"
+    },
+    {
+      "timestamp": "2026-05-10 00:01",
+      "node": "eda",
+      "decision_type": "null_treatment",
+      "detail": "TotalCharges 11 null rows moot — column excluded"
+    },
+    {
+      "timestamp": "2026-05-10 00:01",
+      "node": "eda",
+      "decision_type": "encoding",
+      "detail": "SeniorCitizen recoded from 0/1 integer to Yes/No string to match all other binary columns"
+    },
+    {
+      "timestamp": "2026-05-10 00:01",
+      "node": "eda",
+      "decision_type": "encoding",
+      "detail": "Service columns with 3 levels collapsed to Yes/No — third level captured by InternetService and PhoneService"
+    },
+    {
+      "timestamp": "2026-05-10 00:02",
+      "node": "profiling",
+      "decision_type": "feature_selection",
+      "detail": "Retain all 18 variables for driver analysis — let model assign near-zero importance rather than pre-excluding"
+    },
+    {
+      "timestamp": "2026-05-10 00:03",
+      "node": "driver_analysis",
+      "decision_type": "driver_confirmation",
+      "detail": "Top 7 drivers confirmed: Contract_Month-to-month, tenure, MonthlyCharges, InternetService_Fiber optic, InternetService_No, Contract_Two year, PaymentMethod_Electronic check. Ranks 8-38 confirmed as non-drivers."
+    },
+    {
+      "timestamp": "2026-05-10 00:03",
+      "node": "driver_analysis",
+      "decision_type": "interpretation",
+      "detail": "Fiber optic churn elevated treated as a product problem — not a pricing or demographic artifact. Recommend product/service quality investigation."
+    },
+    {
+      "timestamp": "2026-05-10 00:03",
+      "node": "driver_analysis",
+      "decision_type": "interpretation",
+      "detail": "Electronic check payment treated as a demographic correlate of uncommitted/new customers — not an actionable intervention target in its own right."
+    }
+  ],
+  "notes": [],
+  "columns_excluded": ["customerID", "TotalCharges"],
+  "columns_retained": [
+    "gender", "SeniorCitizen", "Partner", "Dependents",
+    "tenure", "PhoneService", "MultipleLines", "InternetService",
+    "OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport",
+    "StreamingTV", "StreamingMovies", "Contract", "PaperlessBilling",
+    "PaymentMethod", "MonthlyCharges", "Churn"
+  ],
+  "null_treatments": {
+    "TotalCharges": "column excluded — collinear with tenure"
+  },
+  "segment_definitions": {
+    "churned": "Churn == 'Yes' (1,869 customers, 26.5%)",
+    "retained": "Churn == 'No' (5,174 customers, 73.5%)"
+  },
+  "nodes": {
+    "eda": {
+      "status": "complete",
+      "started": "2026-05-10 00:00",
+      "completed": "2026-05-10 00:01",
+      "findings": {
+        "row_count": 7043,
+        "column_count": 21,
+        "target_variable": "Churn",
+        "target_distribution": {
+          "group_1_label": "Retained",
+          "group_1_count": 5174,
+          "group_1_pct": 73.5,
+          "group_2_label": "Churned",
+          "group_2_count": 1869,
+          "group_2_pct": 26.5
+        },
+        "null_flags": ["TotalCharges: 0.16% null (11 rows) — new customers with tenure=0; column excluded so moot"],
+        "distribution_flags": [
+          "tenure: strong negative correlation with churn (-0.352) — churners concentrated in early months",
+          "MonthlyCharges: positive correlation with churn (+0.193) — higher spend = more churn",
+          "TotalCharges: excluded — collinear with tenure (r=0.826)"
+        ],
+        "correlation_flags": [
+          {"pair": ["tenure", "TotalCharges"], "correlation": 0.826, "recommendation": "drop TotalCharges — confirmed by analyst", "confirmed": true}
+        ],
+        "leakage_flags": []
+      },
+      "user_decisions": {
+        "columns_excluded_reason": {"customerID": "operational identifier", "TotalCharges": "collinear with tenure (r=0.826)"},
+        "encoding_decisions": {
+          "SeniorCitizen": "recoded 0/1 to Yes/No",
+          "MultipleLines": "collapsed 3 levels to Yes/No",
+          "OnlineSecurity": "collapsed 3 levels to Yes/No",
+          "OnlineBackup": "collapsed 3 levels to Yes/No",
+          "DeviceProtection": "collapsed 3 levels to Yes/No",
+          "TechSupport": "collapsed 3 levels to Yes/No",
+          "StreamingTV": "collapsed 3 levels to Yes/No",
+          "StreamingMovies": "collapsed 3 levels to Yes/No"
+        },
+        "null_treatment_decisions": {"TotalCharges": "moot — column excluded"}
+      },
+      "flags_raised": [],
+      "flags_resolved": [
+        "TotalCharges type mismatch — column excluded",
+        "SeniorCitizen encoding inconsistency — recoded to Yes/No",
+        "Service columns 3-level values — collapsed to Yes/No",
+        "TotalCharges/tenure collinearity — TotalCharges excluded"
+      ]
+    },
+    "segmentation": {
+      "status": "skipped",
+      "reason": "Already have the churn or no churn flag — those are the two segments we are trying to understand"
+    },
+    "profiling": {
+      "status": "complete",
+      "started": "2026-05-10 00:01",
+      "completed": "2026-05-10 00:02",
+      "findings": {
+        "variables_profiled": 18,
+        "segments_profiled": ["Churned", "Retained"]
+      },
+      "key_differentiators": [
+        {"variable": "tenure", "effect_size": 0.852, "effect_size_metric": "cohens_d", "statistically_significant": true, "direction": "Churners avg 18mo vs Retained avg 38mo — shorter tenure = higher churn risk", "actionable": false},
+        {"variable": "Contract", "effect_size": 0.410, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "88.6% of churners on month-to-month; two-year holders barely churn (2.8%)", "actionable": true},
+        {"variable": "InternetService", "effect_size": 0.322, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "Fiber optic churn 41.9%; DSL 19.0%; No internet 7.4%", "actionable": true},
+        {"variable": "PaymentMethod", "effect_size": 0.303, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "Electronic check churn 45.3%; automatic methods ~15-17%", "actionable": false},
+        {"variable": "MonthlyCharges", "effect_size": 0.446, "effect_size_metric": "cohens_d", "statistically_significant": true, "direction": "Churners avg $74.4 vs Retained $61.3", "actionable": true},
+        {"variable": "PaperlessBilling", "effect_size": 0.191, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "Proxy for uncommitted customer profile — collapsed to near-zero in models", "actionable": false},
+        {"variable": "OnlineSecurity", "effect_size": 0.171, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "Correlated with tenure/contract — not independent driver", "actionable": false},
+        {"variable": "TechSupport", "effect_size": 0.164, "effect_size_metric": "cramers_v", "statistically_significant": true, "direction": "Correlated with tenure/contract — not independent driver", "actionable": false},
+        {"variable": "gender", "effect_size": 0.008, "effect_size_metric": "cramers_v", "statistically_significant": false, "direction": "No meaningful difference — confirmed non-driver", "actionable": false},
+        {"variable": "PhoneService", "effect_size": 0.011, "effect_size_metric": "cramers_v", "statistically_significant": false, "direction": "No meaningful difference — confirmed non-driver", "actionable": false}
+      ],
+      "segment_narratives": {
+        "Churned": "New, uncommitted, high-spend customers on flexible contracts. Median tenure 10 months; 52.9% of 0-6 month customers churn. Almost exclusively month-to-month (88.6%), skew heavily to Fiber optic (69.4%), pay $74.40/month avg, lack protective add-ons, and are disproportionately single with no dependents.",
+        "Retained": "Established, committed customers with multi-year contracts, lower monthly charges ($61.30 avg), automatic payment methods, more add-on services, and longer household commitments."
+      },
+      "hypothesis_results": {},
+      "user_decisions": {
+        "feature_selection_for_driver_analysis": "Retain all 18 variables — let model assign near-zero importance to weak features rather than pre-excluding"
+      },
+      "flags_raised": [],
+      "flags_resolved": [
+        "Fiber optic + MonthlyCharges co-movement — resolved: treat as product problem",
+        "Electronic check and PaperlessBilling overlap — resolved: both are demographic correlates of uncommitted customers",
+        "OnlineSecurity and TechSupport in tandem — resolved: correlated with tenure/contract, not independent drivers"
+      ]
+    },
+    "driver_analysis": {
+      "status": "complete",
+      "started": "2026-05-10 00:02",
+      "completed": "2026-05-10 00:03",
+      "findings": {
+        "task_type": "binary_classification",
+        "method": "decision_tree + gradient_boosting + logistic_regression",
+        "model_quality": {
+          "auc_roc": 0.838,
+          "f1": 0.593,
+          "quality_assessment": "reliable — all three models AUC > 0.83, consistent driver rankings across methods"
+        },
+        "features_used": ["Contract", "tenure", "MonthlyCharges", "InternetService", "PaymentMethod", "PaperlessBilling", "OnlineSecurity", "TechSupport", "gender", "SeniorCitizen", "Partner", "Dependents", "PhoneService", "MultipleLines", "OnlineBackup", "DeviceProtection", "StreamingTV", "StreamingMovies"],
+        "features_excluded": {}
+      },
+      "top_drivers": [
+        {"rank": 1, "variable": "Contract_Month-to-month", "importance_score": 0.845, "direction": "Month-to-month contract → strongly associated with higher churn", "actionable": true, "confirmed": true},
+        {"rank": 2, "variable": "tenure", "importance_score": 0.655, "direction": "Longer tenure → lower churn risk; first 12 months are critical window", "actionable": false, "confirmed": true},
+        {"rank": 3, "variable": "MonthlyCharges", "importance_score": 0.613, "direction": "Higher monthly charges → more churn; churners pay $74.4 avg vs $61.3 for retained", "actionable": true, "confirmed": true},
+        {"rank": 4, "variable": "InternetService_Fiber optic", "importance_score": 0.434, "direction": "Fiber optic → nearly 2x churn odds (OR=1.97); interpreted as product quality problem", "actionable": true, "confirmed": true},
+        {"rank": 5, "variable": "InternetService_No", "importance_score": 0.232, "direction": "No internet service → half the churn odds; phone-only customers have high inertia", "actionable": false, "confirmed": true},
+        {"rank": 6, "variable": "Contract_Two year", "importance_score": 0.112, "direction": "Two-year contract → strong churn protection; these customers churn at only 2.8%", "actionable": true, "confirmed": true},
+        {"rank": 7, "variable": "PaymentMethod_Electronic check", "importance_score": 0.105, "direction": "Electronic check → demographic correlate of new/uncommitted customers, not an independent intervention target", "actionable": false, "confirmed": true}
+      ],
+      "flags_for_validation": [
+        {
+          "variable": "InternetService_Fiber optic",
+          "flag": "product_explanation",
+          "description": "Fiber optic churn elevated confirmed as product problem. Recommend investigating Fiber-specific NPS, complaint data, or service quality metrics to identify the specific failure point.",
+          "confirmed": true
+        },
+        {
+          "variable": "PaymentMethod_Electronic check",
+          "flag": "demographic_correlate",
+          "description": "Electronic check confirmed as demographic correlate of uncommitted/new customers. Not an independent actionable signal.",
+          "confirmed": true
+        }
+      ],
+      "user_decisions": {
+        "top_drivers_confirmed": "ranks 1-7 confirmed",
+        "non_drivers_confirmed": "ranks 8-38 confirmed as non-drivers — gender, PhoneService, MultipleLines, StreamingTV, StreamingMovies, OnlineBackup, DeviceProtection, Partner, Dependents, SeniorCitizen, TechSupport, OnlineSecurity, non-electronic-check payment methods",
+        "fiber_optic_interpretation": "product problem — not pricing or demographic artifact",
+        "electronic_check_interpretation": "demographic correlate — not actionable intervention target"
+      },
+      "flags_raised": [],
+      "flags_resolved": [
+        "Fiber optic interpretation confirmed as product problem",
+        "Electronic check interpretation confirmed as demographic correlate"
+      ]
+    },
+    "insight_synthesis": {
+      "status": "complete",
+      "started": "2026-05-10 00:03",
+      "completed": "2026-05-10 00:04",
+      "narrative": "analyses/telco_customer_churn/outputs/findings_report.md",
+      "recommendations": [
+        {
+          "rank": 1,
+          "headline": "Launch a contract commitment programme targeting new month-to-month customers in months 1–6",
+          "target_segment": "Month-to-month customers, tenure 0–6 months",
+          "motivating_finding": "Contract type is #1 driver (score 0.845); 52.9% churn rate in first 6 months; two-year contracts churn at 2.8%",
+          "confidence": "high"
+        },
+        {
+          "rank": 2,
+          "headline": "Investigate and remediate the Fiber optic product experience",
+          "target_segment": "All Fiber optic customers (3,096 customers, 44% of base)",
+          "motivating_finding": "Fiber optic OR=1.97 in logistic regression; 41.9% churn rate; confirmed product problem by analyst",
+          "confidence": "high"
+        },
+        {
+          "rank": 3,
+          "headline": "Design a value reinforcement programme for high-charge month-to-month customers in year 1",
+          "target_segment": "Month-to-month customers paying above $70/month, tenure 0–12 months",
+          "motivating_finding": "MonthlyCharges #3 driver (score 0.613); churners pay $13.10/month more than retained customers",
+          "confidence": "moderate"
+        }
+      ],
+      "open_questions": [
+        {
+          "question": "What specifically is failing in the Fiber optic product — reliability, support quality, or feature gaps?",
+          "data_needed": "NPS scores, complaint logs, service interruption records, and technician call rates segmented by churn status"
+        },
+        {
+          "question": "Is month-to-month churn driven by contract optionality or customer self-selection?",
+          "data_needed": "Randomised test of the contract commitment programme to separate incentive effect from self-selection bias"
+        },
+        {
+          "question": "Is churn accelerating or decelerating over time? Is the Fiber optic problem recent?",
+          "data_needed": "Temporal dimension — quarterly cohort churn rates over the observation period"
+        }
+      ],
+      "user_decisions": {}
+    }
+  }
+}

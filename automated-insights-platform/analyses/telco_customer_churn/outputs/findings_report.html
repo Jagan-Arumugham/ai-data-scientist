@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telco Customer Churn — Findings Report</title>
+  <style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         max-width: 960px; margin: 0 auto; padding: 40px 24px;
+         color: #1a1a2e; background: #f8f9fa; }
+  h1   { font-size: 28px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  h2   { font-size: 18px; font-weight: 600; color: #2E86AB; margin-top: 48px;
+         padding-bottom: 8px; border-bottom: 2px solid #2E86AB; }
+  h3   { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-top: 24px; }
+  p    { line-height: 1.7; color: #333; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 40px; }
+  .executive-summary { background: #2E86AB; color: white; padding: 28px 32px;
+                        border-radius: 8px; margin: 32px 0; }
+  .executive-summary p { color: white; margin: 0; font-size: 16px; line-height: 1.8; }
+  .finding { background: white; border-left: 4px solid #2E86AB; padding: 20px 24px;
+              margin: 16px 0; border-radius: 0 8px 8px 0;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .finding h3 { margin: 0 0 8px 0; font-size: 15px; }
+  .confidence { display: inline-block; padding: 2px 10px; border-radius: 12px;
+                 font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .confidence.high     { background: #d4edda; color: #155724; }
+  .confidence.moderate { background: #fff3cd; color: #856404; }
+  .confidence.directional { background: #f8d7da; color: #721c24; }
+  .segment-card { background: white; border-radius: 8px; padding: 24px 28px;
+                   margin: 16px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .segment-card h3 { margin: 0 0 4px 0; font-size: 16px; color: #2E86AB; }
+  .segment-size { color: #666; font-size: 13px; margin-bottom: 12px; }
+  .rec { background: white; border-radius: 8px; padding: 20px 24px; margin: 12px 0;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; gap: 16px; }
+  .rec-number { font-size: 24px; font-weight: 700; color: #2E86AB;
+                 min-width: 32px; line-height: 1; }
+  .rec-content h3 { margin: 0 0 6px 0; font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; background: white;
+           border-radius: 8px; overflow: hidden;
+           box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin: 16px 0; }
+  th    { background: #2E86AB; color: white; padding: 12px 16px;
+           text-align: left; font-size: 13px; font-weight: 600; }
+  td    { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .open-q { background: #fff8e1; border-left: 4px solid #F4A261; padding: 14px 18px;
+              margin: 10px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .audit-row { display: flex; gap: 12px; padding: 10px 0;
+                border-bottom: 1px solid #eee; font-size: 13px; }
+  .audit-label { font-weight: 600; min-width: 180px; color: #555; }
+  .metric-chips { display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
+  .chip { background: rgba(255,255,255,0.2); border-radius: 6px; padding: 10px 18px; text-align: center; }
+  .chip-value { font-size: 24px; font-weight: 700; }
+  .chip-label { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+          font-weight: 600; margin: 2px; }
+  .tag-action { background: #cce5f5; color: #1a5f7a; }
+  .tag-struct { background: #e9ecef; color: #495057; }
+  .metrics-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .metric-box { background: #f8f9fa; border-radius: 6px; padding: 10px 16px; min-width: 120px; }
+  .metric-box .val { font-size: 20px; font-weight: 700; color: #2E86AB; }
+  .metric-box .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+  <h1>Telco Customer Churn — Findings Report</h1>
+  <p class="meta">
+    Analysis ID: telco_customer_churn &nbsp;·&nbsp; Date: 2026-05-10 &nbsp;·&nbsp;
+    Business question: Why are customers leaving and who is most at risk? &nbsp;·&nbsp;
+    All findings analyst-confirmed
+  </p>
+
+  
+<div class="executive-summary">
+  <p>26.5% of this telecom's customers have churned — a meaningful loss concentrated
+almost entirely among a specific, identifiable profile: customers on month-to-month contracts
+who are still in their first year with the company. The data clearly shows that contract structure
+is the single strongest predictor of churn, with month-to-month customers churning at 42.7%
+compared to just 2.8% for two-year contract holders. Fiber optic internet customers churn at
+nearly twice the rate of any other service type — a pattern confirmed as a product quality
+problem, not a pricing artifact. The primary recommendations are: convert new month-to-month
+customers to longer-term contracts before the 12-month mark, and investigate what is driving
+dissatisfaction with the Fiber optic product.</p>
+  <div class="metric-chips">
+    <div class="chip"><div class="chip-value">7,043</div><div class="chip-label">Customers analysed</div></div>
+    <div class="chip"><div class="chip-value">26.5%</div><div class="chip-label">Churn rate</div></div>
+    <div class="chip"><div class="chip-value">0.838</div><div class="chip-label">Model AUC-ROC</div></div>
+    <div class="chip"><div class="chip-value">7</div><div class="chip-label">Confirmed drivers</div></div>
+    <div class="chip"><div class="chip-value">3</div><div class="chip-label">Recommendations</div></div>
+  </div>
+</div>
+
+
+  <h2>Key Findings</h2>
+  <div class="finding">
+      <h3>1. Contract type is the single strongest driver of churn</h3>
+      <p>Month-to-month customers churn at 42.7%, versus 11.3% on one-year contracts and 2.8% on two-year contracts. Month-to-month customers are 55% of the customer base yet account for 88.6% of all churners. Contract type has a consolidated importance score of 0.845 — the highest of any variable by a wide margin, and consistent across all three modelling methods (Decision Tree, Gradient Boosting, Logistic Regression).</p>
+      <div><strong>Segments affected:</strong> Month-to-month customers (3,875)</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+<div class="finding">
+      <h3>2. The first 12 months are the critical churn window</h3>
+      <p>Customers who churn have a median tenure of just 10 months versus 38 months for retained customers — a large effect (Cohen's d = 0.85). Churn rate by tenure band: 52.9% in months 0–6, 35.9% in months 7–12, 28.7% in months 13–24, falling to 9.5% by months 49–72. Customers who survive their first year are significantly less likely to leave.</p>
+      <div><strong>Segments affected:</strong> All customers in their first 12 months (~2,186 customers)</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+<div class="finding">
+      <h3>3. Fiber optic customers churn at nearly twice the rate of any other internet service type</h3>
+      <p>Fiber optic customers churn at 41.9%, compared to 19.0% for DSL and 7.4% for customers with no internet. Fiber optic is 44% of the base (3,096 customers) but accounts for 69.4% of all churners. The logistic regression odds ratio is 1.97 — the highest in the model. This elevated churn is confirmed as a product quality problem, not a pricing or demographic artifact.</p>
+      <div><strong>Segments affected:</strong> Fiber optic customers (3,096)</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+<div class="finding">
+      <h3>4. High monthly charges independently amplify churn risk</h3>
+      <p>Churners pay an average of $74.40/month versus $61.30 for retained customers — a $13.10 gap (21% higher). Monthly charges rank third in the consolidated driver model (score 0.613) and carry independent predictive weight beyond the Fiber optic effect. The combination of high charges and a month-to-month contract is the highest-risk profile in the data.</p>
+      <div><strong>Segments affected:</strong> High-charge, month-to-month customers</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+<div class="finding">
+      <h3>5. Two-year contracts are a near-complete churn shield</h3>
+      <p>Two-year contract holders churn at just 2.8% — essentially negligible. This is not simply a tenure effect: two-year holders span a range of tenures and still show very low churn. The contract commitment itself appears to be the protective mechanism, with a consolidated driver score of 0.112.</p>
+      <div><strong>Segments affected:</strong> Two-year contract holders (1,695)</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+<div class="finding">
+      <h3>6. 31 variables tested and confirmed as non-drivers</h3>
+      <p>Gender, phone service, streaming services, online backup, device protection, partner and dependent status, senior citizen status, tech support, online security, and non-electronic-check payment methods all returned near-zero importance across all three models once contract type, tenure, and internet service were controlled for. Their univariate profiling differences were downstream effects of the core drivers, not independent causes.</p>
+      <div><strong>Segments affected:</strong> All segments</div>
+      <span class="confidence high">High confidence</span>
+    </div>
+
+  <h2>Segment Profiles</h2>
+  
+    <div class="segment-card" style="border-top: 4px solid #E84855;">
+      <h3 style="color:#E84855;">Churned</h3>
+      <div class="segment-size">1,869 customers &nbsp;·&nbsp; 26.5% of base</div>
+      <p>New, uncommitted, high-spend customers on flexible contracts. Median tenure 10 months; 52.9% of 0-6 month customers churn. Almost exclusively month-to-month (88.6%), skew heavily to Fiber optic (69.4%), pay $74.40/month avg, lack protective add-ons, and are disproportionately single with no dependents.</p>
+      <div class="metrics-row"><div class="metric-box"><div class="val" style="color:#E84855;">1,869</div><div class="lbl">Customers</div></div><div class="metric-box"><div class="val" style="color:#E84855;">26.5%</div><div class="lbl">Of base</div></div><div class="metric-box"><div class="val" style="color:#E84855;">10 mo</div><div class="lbl">Median tenure</div></div><div class="metric-box"><div class="val" style="color:#E84855;">$74.40</div><div class="lbl">Avg monthly charges</div></div></div>
+    </div>
+    <div class="segment-card" style="border-top: 4px solid #2E86AB;">
+      <h3 style="color:#2E86AB;">Retained</h3>
+      <div class="segment-size">5,174 customers &nbsp;·&nbsp; 73.5% of base</div>
+      <p>Established, committed customers with multi-year contracts, lower monthly charges ($61.30 avg), automatic payment methods, more add-on services, and longer household commitments.</p>
+      <div class="metrics-row"><div class="metric-box"><div class="val" style="color:#2E86AB;">5,174</div><div class="lbl">Customers</div></div><div class="metric-box"><div class="val" style="color:#2E86AB;">73.5%</div><div class="lbl">Of base</div></div><div class="metric-box"><div class="val" style="color:#2E86AB;">38 mo</div><div class="lbl">Median tenure</div></div><div class="metric-box"><div class="val" style="color:#2E86AB;">$61.30</div><div class="lbl">Avg monthly charges</div></div></div>
+    </div>
+
+  <h2>Driver Rankings</h2>
+  
+<p style="color:#555;font-size:13px;margin-bottom:12px;">
+  Three models run: Decision Tree (AUC 0.830), Gradient Boosting (AUC 0.838),
+  Logistic Regression (AUC 0.839). Rankings are consolidated across all three.
+  <strong style="color:#155724;">Model quality: Reliable (AUC &gt; 0.83).</strong>
+</p>
+<table>
+  <thead><tr>
+    <th style="width:40px;">Rank</th>
+    <th>Variable</th>
+    <th>Direction of Effect</th>
+    <th style="width:120px;">Type</th>
+  </tr></thead>
+  <tbody><tr>
+      <td><strong>1</strong></td>
+      <td><strong>Contract_Month-to-month</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#2E86AB;width:84.5%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.845</span></td>
+      <td style="font-size:12px;color:#444;">Month-to-month contract → strongly associated with higher churn</td>
+      <td><span class="tag tag-action">Actionable</span></td>
+    </tr><tr>
+      <td><strong>2</strong></td>
+      <td><strong>tenure</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#6C757D;width:65.5%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.655</span></td>
+      <td style="font-size:12px;color:#444;">Longer tenure → lower churn risk; first 12 months are critical window</td>
+      <td><span class="tag tag-struct">Structural</span></td>
+    </tr><tr>
+      <td><strong>3</strong></td>
+      <td><strong>MonthlyCharges</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#2E86AB;width:61.3%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.613</span></td>
+      <td style="font-size:12px;color:#444;">Higher monthly charges → more churn; churners pay $74.4 avg vs $61.3 for retained</td>
+      <td><span class="tag tag-action">Actionable</span></td>
+    </tr><tr>
+      <td><strong>4</strong></td>
+      <td><strong>InternetService_Fiber optic</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#2E86AB;width:43.4%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.434</span></td>
+      <td style="font-size:12px;color:#444;">Fiber optic → nearly 2x churn odds (OR=1.97); interpreted as product quality problem</td>
+      <td><span class="tag tag-action">Actionable</span></td>
+    </tr><tr>
+      <td><strong>5</strong></td>
+      <td><strong>InternetService_No</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#6C757D;width:23.2%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.232</span></td>
+      <td style="font-size:12px;color:#444;">No internet service → half the churn odds; phone-only customers have high inertia</td>
+      <td><span class="tag tag-struct">Structural</span></td>
+    </tr><tr>
+      <td><strong>6</strong></td>
+      <td><strong>Contract_Two year</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#2E86AB;width:11.2%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.112</span></td>
+      <td style="font-size:12px;color:#444;">Two-year contract → strong churn protection; these customers churn at only 2.8%</td>
+      <td><span class="tag tag-action">Actionable</span></td>
+    </tr><tr>
+      <td><strong>7</strong></td>
+      <td><strong>PaymentMethod_Electronic check</strong>
+          <div style="background:#e9ecef;border-radius:4px;height:8px;width:100%;margin-top:4px;"><div style="background:#6C757D;width:10.5%;height:8px;border-radius:4px;"></div></div>
+          <span style="font-size:11px;color:#888;">0.105</span></td>
+      <td style="font-size:12px;color:#444;">Electronic check → demographic correlate of new/uncommitted customers, not an independent intervention target</td>
+      <td><span class="tag tag-struct">Structural</span></td>
+    </tr></tbody>
+</table>
+
+  <h2>Recommendations</h2>
+  
+    <div class="rec">
+      <div class="rec-number">1</div>
+      <div class="rec-content">
+        <h3>Launch a contract commitment programme targeting new month-to-month customers in months 1–6</h3>
+        <p style="margin:0 0 10px 0;font-size:13px;">Structured outreach at months 1, 3, and 5 offering incentives — discounted rates, service credits, or bundled add-ons — in exchange for committing to a 1- or 2-year contract.</p>
+        <table style="box-shadow:none;margin:0;background:#f8f9fa;border-radius:6px;">
+          <tr><td style="font-weight:600;color:#555;width:170px;background:transparent;">Target segment</td>
+              <td style="background:transparent;">Month-to-month customers, tenure 0–6 months</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Motivating finding</td>
+              <td style="background:transparent;">Contract type is the #1 driver (score 0.845); 52.9% of customers churn in months 0–6; two-year contracts churn at only 2.8%.</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Success looks like</td>
+              <td style="background:transparent;">A measurable reduction in 0–12 month churn in the targeted cohort versus a control group not offered the programme.</td></tr>
+        </table>
+        <span class="confidence high">High confidence</span>
+      </div>
+    </div>
+    <div class="rec">
+      <div class="rec-number">2</div>
+      <div class="rec-content">
+        <h3>Investigate and remediate the Fiber optic product experience</h3>
+        <p style="margin:0 0 10px 0;font-size:13px;">Structured review of NPS scores, complaint logs, service interruption records, and technician call rates segmented by churn status, to identify whether the failure is reliability, support quality, or feature gaps.</p>
+        <table style="box-shadow:none;margin:0;background:#f8f9fa;border-radius:6px;">
+          <tr><td style="font-weight:600;color:#555;width:170px;background:transparent;">Target segment</td>
+              <td style="background:transparent;">All Fiber optic customers (3,096 — 44% of base)</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Motivating finding</td>
+              <td style="background:transparent;">Fiber optic odds ratio 1.97 in logistic regression; churn rate 41.9%; confirmed as a product quality problem, not pricing or demographics.</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Success looks like</td>
+              <td style="background:transparent;">Identification of the specific product failure point, followed by a targeted service improvement with Fiber churn rate as the primary outcome metric.</td></tr>
+        </table>
+        <span class="confidence high">High confidence</span>
+      </div>
+    </div>
+    <div class="rec">
+      <div class="rec-number">3</div>
+      <div class="rec-content">
+        <h3>Design a value reinforcement programme for high-charge month-to-month customers in their first year</h3>
+        <p style="margin:0 0 10px 0;font-size:13px;">Proactive value communication — usage summaries, feature discovery prompts, or personalised service reviews — to anchor perceived value before the cancellation decision. Coordinate with Fiber remediation for those on Fiber.</p>
+        <table style="box-shadow:none;margin:0;background:#f8f9fa;border-radius:6px;">
+          <tr><td style="font-weight:600;color:#555;width:170px;background:transparent;">Target segment</td>
+              <td style="background:transparent;">Month-to-month customers paying above $70/month, tenure 0–12 months</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Motivating finding</td>
+              <td style="background:transparent;">MonthlyCharges ranks third as a driver (score 0.613); churners pay $13.10/month more than retained customers.</td></tr>
+          <tr><td style="font-weight:600;color:#555;background:transparent;">Success looks like</td>
+              <td style="background:transparent;">Reduction in 0–12 month churn among the high-charge cohort, measured separately from the contract commitment programme effect.</td></tr>
+        </table>
+        <span class="confidence moderate">Moderate confidence</span>
+      </div>
+    </div>
+
+  <h2>Open Questions and Limitations</h2>
+  <div class="open-q">
+      <strong>What specifically is failing in the Fiber optic product — reliability, support quality, or feature gaps?</strong><br>
+      <span style="color:#666;font-size:13px;">Data needed: NPS scores, complaint logs, service interruption records, and technician call rates segmented by churn status</span>
+    </div>
+<div class="open-q">
+      <strong>Is month-to-month churn driven by contract optionality or customer self-selection?</strong><br>
+      <span style="color:#666;font-size:13px;">Data needed: Randomised test of the contract commitment programme to separate incentive effect from self-selection bias</span>
+    </div>
+<div class="open-q">
+      <strong>Is churn accelerating or decelerating over time? Is the Fiber optic problem recent?</strong><br>
+      <span style="color:#666;font-size:13px;">Data needed: Temporal dimension — quarterly cohort churn rates over the observation period</span>
+    </div>
+<div class="open-q">
+  <strong>Do non-driver variables matter within specific sub-segments?</strong><br>
+  <span style="color:#666;font-size:13px;">Data needed: Sub-segment analysis within Fiber optic or early-tenure cohorts —
+  tech support, online security, and senior citizen status may be meaningful within those groups even though
+  they are non-drivers at the population level.</span>
+</div>
+
+  <h2>Analytical Record</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:12px;">
+    Complete log of decisions made during the analysis. All decisions were confirmed by the analyst
+    before the next node proceeded.
+  </p>
+  <div class="audit-row">
+      <div class="audit-label">EDA — Column Exclusion</div>
+      <div>Excluded customerID — operational identifier with no analytical value</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">EDA — Column Exclusion</div>
+      <div>Excluded TotalCharges — collinear with tenure (r=0.826); MonthlyCharges retained to capture spend independently</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">EDA — Null Treatment</div>
+      <div>TotalCharges 11 null rows moot — column excluded</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">EDA — Encoding</div>
+      <div>SeniorCitizen recoded from 0/1 integer to Yes/No string to match all other binary columns</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">EDA — Encoding</div>
+      <div>Service columns with 3 levels collapsed to Yes/No — third level captured by InternetService and PhoneService</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">PROFILING — Feature Selection</div>
+      <div>Retain all 18 variables for driver analysis — let model assign near-zero importance rather than pre-excluding</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">DRIVER_ANALYSIS — Driver Confirmation</div>
+      <div>Top 7 drivers confirmed: Contract_Month-to-month, tenure, MonthlyCharges, InternetService_Fiber optic, InternetService_No, Contract_Two year, PaymentMethod_Electronic check. Ranks 8-38 confirmed as non-drivers.</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">DRIVER_ANALYSIS — Interpretation</div>
+      <div>Fiber optic churn elevated treated as a product problem — not a pricing or demographic artifact. Recommend product/service quality investigation.</div>
+    </div>
+<div class="audit-row">
+      <div class="audit-label">DRIVER_ANALYSIS — Interpretation</div>
+      <div>Electronic check payment treated as a demographic correlate of uncommitted/new customers — not an actionable intervention target in its own right.</div>
+    </div>
+
+</body>
+</html>

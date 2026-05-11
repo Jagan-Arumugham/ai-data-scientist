@@ -1,0 +1,87 @@
+{
+  "session": {
+    "started": "",
+    "last_updated": "",
+    "analysis_id": "retail_customer_lapse",
+    "status": "not_started"
+  },
+  "intake": {
+    "business_question": "Which customers are at risk of lapsing and what drives that behavior?",
+    "dataset": "data/retail_customers.csv",
+    "data_dictionary": "data/data_dictionary.md",
+    "population": "Customers with at least one purchase in trailing 12 months",
+    "time_period": "Trailing 12 months, snapshot December 31 2024",
+    "hypotheses": [
+      "Low purchase frequency and high recency are strongest predictors of lapse",
+      "Digital disengagement precedes lapse \u2014 email and app engagement are leading indicators",
+      "Single-category buyers lapse at higher rate than multi-category buyers",
+      "Bronze loyalty tier customers lapse at higher rate",
+      "Shorter tenure customers may lapse at higher rate"
+    ],
+    "nodes_to_run": [
+      "eda",
+      "segmentation",
+      "profiling",
+      "driver_analysis",
+      "insight_synthesis"
+    ],
+    "nodes_to_skip": []
+  },
+  "decisions": [],
+  "notes": [],
+  "columns_excluded": [],
+  "columns_retained": [],
+  "null_treatments": {
+    "email_open_rate": "Null means email opt-out \u2014 create binary flag, do not impute",
+    "email_click_rate": "Same as email_open_rate",
+    "app_sessions_30d": "Null means no app download \u2014 treat as zero engagement",
+    "days_since_app_login": "Same as app_sessions_30d",
+    "promo_response_rate": "Null means not enrolled in promo program \u2014 create binary flag"
+  },
+  "segment_definitions": {},
+  "nodes": {
+    "eda": {
+      "status": "pending",
+      "started": "",
+      "completed": "",
+      "findings": {},
+      "user_decisions": {},
+      "flags_raised": [],
+      "flags_resolved": []
+    },
+    "segmentation": {
+      "status": "pending",
+      "started": "",
+      "completed": "",
+      "findings": {},
+      "user_decisions": {},
+      "iterations": [],
+      "approved_segmentation": {}
+    },
+    "profiling": {
+      "status": "pending",
+      "started": "",
+      "completed": "",
+      "findings": {},
+      "user_decisions": {},
+      "key_differentiators": []
+    },
+    "driver_analysis": {
+      "status": "pending",
+      "started": "",
+      "completed": "",
+      "findings": {},
+      "user_decisions": {},
+      "top_drivers": [],
+      "flags_for_validation": []
+    },
+    "insight_synthesis": {
+      "status": "pending",
+      "started": "",
+      "completed": "",
+      "narrative": "",
+      "recommendations": [],
+      "user_decisions": {}
+    }
+  }
+}
